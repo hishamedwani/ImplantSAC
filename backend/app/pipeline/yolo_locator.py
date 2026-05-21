@@ -1,29 +1,30 @@
 import os
+from pathlib import Path
+
 import cv2
 import numpy as np
-import SimpleITK as sitk
-from pathlib import Path
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
 load_dotenv()
 
-# ── Constants (matching Alaa's notebook exactly) ──────────────────────────
-CONF_THR   = 0.35
-MIN_SLICES = 5
-Z_GAP      = 5
-IOU_MERGE  = 0.3
-MERGE_DIST = 60
-TOP_N      = 6
-ARCH_X     = (0.20, 0.80)
-ARCH_Y     = (0.10, 0.75)
-IMG_SIZE   = 640
+# ── Inference constants (matching Alaa's notebook) ────────────────────────
+CONF_THR   = 0.35   # Minimum confidence threshold
+MIN_SLICES = 5      # Minimum slices for a valid detection group
+Z_GAP      = 5      # Maximum z-gap to merge detections into one group
+IOU_MERGE  = 0.3    # IoU threshold for merging boxes
+MERGE_DIST = 60     # Pixel distance threshold for merging nearby sites
+TOP_N      = 6      # Maximum number of candidate sites to keep
+ARCH_X     = (0.20, 0.80)  # Valid arch region x-bounds (normalized)
+ARCH_Y     = (0.10, 0.75)  # Valid arch region y-bounds (normalized)
+IMG_SIZE   = 640    # YOLO input image size
 
 # ── Model loader ──────────────────────────────────────────────────────────
-_model = None
+_model: YOLO | None = None
+
 
 def get_model() -> YOLO:
-    """Load YOLO model once and cache it."""
+    """Load YOLO model once and cache it in module-level variable."""
     global _model
     if _model is None:
         weights_path = os.getenv("YOLO_WEIGHTS_PATH")
@@ -36,8 +37,9 @@ def get_model() -> YOLO:
     return _model
 
 
-# ── Scanner z-range detection (from Alaa's notebook exactly) ──────────────
+# ── Scanner detection ─────────────────────────────────────────────────────
 def detect_scanner(nz: int, spacing: tuple) -> tuple[str, tuple[float, float]]:
+    """Detect scanner type from volume z-size and spacing, returning z-range fractions."""
     sp = spacing[0] if spacing else 0.0
     if 430 <= nz <= 460:                return "Kavo",         (0.36, 0.75)
     if 490 <= nz <= 520:                return "Newtom",       (0.28, 0.65)
@@ -48,76 +50,83 @@ def detect_scanner(nz: int, spacing: tuple) -> tuple[str, tuple[float, float]]:
     return "Unknown", (0.25, 0.60)
 
 
-# ── Slice normalisation (from Alaa's notebook exactly) ────────────────────
+# ── Slice normalisation ───────────────────────────────────────────────────
 def norm_slice(sl: np.ndarray) -> np.ndarray:
-    sl  = sl.astype(np.float32)
-    lo  = np.percentile(sl, 1)
-    hi  = np.percentile(sl, 99)
-    sl  = np.clip(sl, lo, hi)
-    sl  = ((sl - lo) / (hi - lo + 1e-8) * 255).astype(np.uint8)
+    """Normalize a HU slice to uint8 BGR for YOLO inference."""
+    sl = sl.astype(np.float32)
+    lo = np.percentile(sl, 1)
+    hi = np.percentile(sl, 99)
+    sl = np.clip(sl, lo, hi)
+    sl = ((sl - lo) / (hi - lo + 1e-8) * 255).astype(np.uint8)
     return cv2.cvtColor(sl, cv2.COLOR_GRAY2BGR)
 
 
-# ── IoU (from Alaa's notebook exactly) ────────────────────────────────────
+# ── IoU ───────────────────────────────────────────────────────────────────
 def box_iou(a: tuple, b: tuple) -> float:
+    """Compute intersection-over-union between two bounding boxes (x1,y1,x2,y2)."""
     xi1, yi1 = max(a[0], b[0]), max(a[1], b[1])
     xi2, yi2 = min(a[2], b[2]), min(a[3], b[3])
     inter    = max(0, xi2 - xi1) * max(0, yi2 - yi1)
-    return inter / ((a[2]-a[0])*(a[3]-a[1]) +
-                    (b[2]-b[0])*(b[3]-b[1]) - inter + 1e-8)
+    return inter / ((a[2]-a[0])*(a[3]-a[1]) + (b[2]-b[0])*(b[3]-b[1]) - inter + 1e-8)
 
 
-# ── Post-processing (from Alaa's notebook exactly) ────────────────────────
+# ── Post-processing ───────────────────────────────────────────────────────
 def merge_nearby(sites: list, img_w: int, img_h: int, dist: int = 60) -> list:
+    """Merge spatially close detection groups into single sites."""
     merged, used = [], set()
     for i, g1 in enumerate(sites):
-        if i in used: continue
+        if i in used:
+            continue
         boxes1 = [d["box"] for d in g1]
-        cx1 = np.mean([(b[0]+b[2])/2 for b in boxes1])
-        cy1 = np.mean([(b[1]+b[3])/2 for b in boxes1])
-        grp = list(g1); used.add(i)
+        cx1    = np.mean([(b[0]+b[2])/2 for b in boxes1])
+        cy1    = np.mean([(b[1]+b[3])/2 for b in boxes1])
+        grp    = list(g1)
+        used.add(i)
         for j, g2 in enumerate(sites):
-            if j <= i or j in used: continue
+            if j <= i or j in used:
+                continue
             boxes2 = [d["box"] for d in g2]
-            cx2 = np.mean([(b[0]+b[2])/2 for b in boxes2])
-            cy2 = np.mean([(b[1]+b[3])/2 for b in boxes2])
+            cx2    = np.mean([(b[0]+b[2])/2 for b in boxes2])
+            cy2    = np.mean([(b[1]+b[3])/2 for b in boxes2])
             if np.sqrt((cx1-cx2)**2 + (cy1-cy2)**2) < dist:
-                grp.extend(g2); used.add(j)
+                grp.extend(g2)
+                used.add(j)
         merged.append(grp)
     return merged
 
 
 def filter_arch(sites: list, img_w: int, img_h: int) -> list:
+    """Remove sites outside the expected dental arch region."""
     kept = []
     for g in sites:
         boxes = [d["box"] for d in g]
-        cx = np.mean([(b[0]+b[2])/2 for b in boxes]) / img_w
-        cy = np.mean([(b[1]+b[3])/2 for b in boxes]) / img_h
+        cx    = np.mean([(b[0]+b[2])/2 for b in boxes]) / img_w
+        cy    = np.mean([(b[1]+b[3])/2 for b in boxes]) / img_h
         if ARCH_X[0] < cx < ARCH_X[1] and ARCH_Y[0] < cy < ARCH_Y[1]:
             kept.append(g)
     return kept
 
 
 def score_rank(sites: list, top_n: int) -> list:
+    """Rank sites by mean confidence × number of slices, return top N."""
     return sorted(
         sites,
         key=lambda g: np.mean([d["conf"] for d in g]) * len(g),
-        reverse=True
+        reverse=True,
     )[:top_n]
 
 
 # ── Main localization function ────────────────────────────────────────────
 def locate_missing_tooth(
-    volume: np.ndarray,
-    spacing: tuple[float, float, float],
-    z_override: tuple[float, float] = None,
-    device: str = "cpu"
+    volume:     np.ndarray,
+    spacing:    tuple[float, float, float],
+    z_override: tuple[float, float] | None = None,
+    device:     str = "cpu",
 ) -> dict:
     """
     Run YOLO inference on a CBCT volume to locate the missing tooth.
 
-    Volume must be in (z, y, x) axis ordering — consistent with our
-    cbct_loader.py which always uses SimpleITK.
+    Volume must be in (z, y, x) axis ordering.
 
     Args:
         volume:     3D numpy array (z, y, x)
@@ -128,14 +137,14 @@ def locate_missing_tooth(
     Returns:
         dict with keys:
             z       — best axial slice index
-            cx      — centroid x in pixel coords of axial slice (column)
-            cy      — centroid y in pixel coords of axial slice (row)
+            cx      — centroid x in pixel coords (column)
+            cy      — centroid y in pixel coords (row)
             conf    — mean confidence of top site
-            score   — conf * n_slices
+            score   — conf × n_slices
             z_range — (z_min, z_max) of the detected site
             scanner — detected scanner type
     """
-    model = get_model()
+    model            = get_model()
     nz, img_h, img_w = volume.shape
 
     scanner, z_frac = detect_scanner(nz, spacing)
@@ -143,7 +152,7 @@ def locate_missing_tooth(
         z_frac = z_override
     z0, z1 = int(nz * z_frac[0]), int(nz * z_frac[1])
 
-    # Raw inference slice by slice
+    # Run inference slice by slice
     raw = []
     for z in range(z0, z1):
         sl  = norm_slice(volume[z])
@@ -157,21 +166,22 @@ def locate_missing_tooth(
             })
 
     if not raw:
-        raise ValueError(
-            "YOLO found no detections. "
-            "Check z_override or scan quality."
-        )
+        raise ValueError("YOLO found no detections. Check z_override or scan quality.")
 
-    # Consensus grouping
+    # Group detections into sites by z-proximity and IoU
     raw.sort(key=lambda d: d["z"])
     sites, used = [], set()
     for i, d in enumerate(raw):
-        if i in used: continue
-        g = [d]; used.add(i)
+        if i in used:
+            continue
+        g = [d]
+        used.add(i)
         for j, d2 in enumerate(raw):
-            if j in used or d2["z"] - g[-1]["z"] > Z_GAP: continue
+            if j in used or d2["z"] - g[-1]["z"] > Z_GAP:
+                continue
             if box_iou(g[-1]["box"], d2["box"]) >= IOU_MERGE:
-                g.append(d2); used.add(j)
+                g.append(d2)
+                used.add(j)
         if len(g) >= MIN_SLICES:
             sites.append(g)
 
@@ -191,18 +201,16 @@ def locate_missing_tooth(
             "Try z_override to manually set the z range."
         )
 
-    # Take the top-scoring site
-    top = sites[0]
-    zs    = [d["z"]   for d in top]
+    # Select top-scoring site
+    top   = sites[0]
+    zs    = [d["z"]    for d in top]
     confs = [d["conf"] for d in top]
     boxes = [d["box"]  for d in top]
 
-    # Best z = slice with highest confidence in top site
-    best  = max(top, key=lambda d: d["conf"])
-    z_best = best["z"]
+    # Best z = slice with highest confidence
+    z_best = max(top, key=lambda d: d["conf"])["z"]
 
-    # Centroid in pixel coordinates of the axial slice
-    # cx = column (x-axis), cy = row (y-axis)
+    # Centroid in axial slice pixel coordinates
     cx = int(np.mean([(b[0]+b[2])/2 for b in boxes]))
     cy = int(np.mean([(b[1]+b[3])/2 for b in boxes]))
 

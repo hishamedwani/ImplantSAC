@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
+
 from app.core.auth import authenticate_user, create_access_token
 
 router = APIRouter(tags=["auth"])
@@ -18,29 +19,21 @@ class LoginResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(request: LoginRequest):
+def login(request: LoginRequest) -> LoginResponse:
+    """Authenticate user and return a JWT access token."""
     user = authenticate_user(request.username, request.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
+            detail="Invalid username or password",
         )
     token = create_access_token({
         "sub":  user["username"],
-        "role": user["role"]
+        "role": user["role"],
     })
     return LoginResponse(
         access_token=token,
         token_type="bearer",
         username=user["username"],
-        role=user["role"]
+        role=user["role"],
     )
-
-
-@router.get("/me")
-def get_me(token: str = None):
-    """Return current user info — used by frontend on app load."""
-    from app.core.auth import get_current_user
-    from fastapi import Depends
-    # This is handled via dependency injection in protected routes
-    return {"status": "use /api/auth/login to authenticate"}

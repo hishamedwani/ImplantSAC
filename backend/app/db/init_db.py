@@ -1,8 +1,8 @@
-from app.db.database import engine, Base
-from app.db import models  # noqa: F401
+from app.db.database import Base, engine
+from app.db import models  # noqa: F401 — imported to register models with SQLAlchemy
 
 
-def init_db():
+def init_db() -> None:
     """Create all tables in the database. Fails gracefully if DB is unreachable."""
     try:
         Base.metadata.create_all(bind=engine)
