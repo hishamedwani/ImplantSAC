@@ -32,3 +32,5 @@ backend/uploads/
 
 # Segmentation files
 backend/segmentations/
+
+echo "backend/C:/" >> .gitignore
