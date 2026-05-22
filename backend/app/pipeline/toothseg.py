@@ -1,4 +1,5 @@
 import os
+import tempfile
 import shutil
 import subprocess
 import sys
@@ -65,8 +66,10 @@ def run_toothseg(
 
     # Unique temp dirs per run to avoid collisions
     run_id     = str(uuid.uuid4())[:6]
-    input_dir  = Path("C:/tmp") / f"is_in_{run_id}"
-    output_dir = Path("C:/tmp") / f"is_out_{run_id}"
+    
+    tmp_base   = Path(tempfile.gettempdir())
+    input_dir  = tmp_base / f"is_in_{run_id}"
+    output_dir = tmp_base / f"is_out_{run_id}"
     input_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
 
