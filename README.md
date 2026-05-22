@@ -88,53 +88,51 @@ Five factors are computed automatically from the segmentation and HU values:
 
 ## Screenshots & Demo
 
-> **Screenshots here.**
-
 ### Dashboard
-<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
+![Dashboard](docs/screenshots/dashboard.png)
 > Shows total cases, SAC breakdown (Straightforward / Advanced / Complex), recent cases with delete and view actions.
 
 ---
 
 ### Upload Page
-<!-- ![Upload](docs/screenshots/upload.png) -->
+![Upload](docs/screenshots/upload.png)
 > Drag-and-drop interface for `.nii`, `.nii.gz`, `.mha` CBCT scans. Optional patient ID field.
 
 ---
 
 ### Processing Page
-<!-- ![Processing](docs/screenshots/processing.png) -->
+![Processing](docs/screenshots/processing.png)
 > Animated 5-stage progress indicator: Loading Scan → Detecting Site → Segmenting → Measuring → Classifying.
 
 ---
 
 ### Results Page
-<!-- ![Results](docs/screenshots/results.png) -->
+![Results](docs/screenshots/results.png)
 > Full classification result with MPR viewer, factor pills, reasoning chain, detection details, and clinical disclaimer.
 
 ---
 
 ### MPR Viewer
-<!-- ![MPR Viewer](docs/screenshots/mpr_viewer.png) -->
+![MPR Viewer](docs/screenshots/mpr_viewer.png)
 > Interactive axial / coronal / sagittal viewer with segmentation overlay (cyan=teeth) and ⊕ Site jump button.
 
 ---
 
 ### History Page
-<!-- ![History](docs/screenshots/history.png) -->
+![History](docs/screenshots/history.png)
 > Filterable case list. Color-coded filter buttons. Overridden cases labeled with `✎ Overridden from X`.
 
 ---
 
 ### Case Detail
-<!-- ![Case Detail](docs/screenshots/case_detail.png) -->
+![Case Detail](docs/screenshots/case_detail1.png)
+![Case Detail](docs/screenshots/case_detail2.png)
 > Full case view with classification override (S/A/C), clinician notes, detection details, reasoning chain, and clinical disclaimer card.
 
 ---
 
 ### GIF Demo (optional)
 <!-- ![Demo GIF](docs/demo.gif) -->
-> Tip: Record a short screen capture using [Kap](https://getkap.co/) (Mac) or [ScreenToGif](https://www.screentogif.com/) (Windows) showing the upload → processing → results flow.
 
 ---
 
@@ -331,23 +329,6 @@ Final SAC:
 | `GET` | `/api/viewer/{id}/volume-info` | Volume shape + YOLO coords |
 | `GET` | `/api/viewer/{id}/slice` | PNG slice with segmentation overlay |
 
----
-
-## Adding Screenshots
-
-To add screenshots to this README:
-
-1. Create a `docs/screenshots/` folder in the repo root
-2. Take screenshots of each page and save them:
-   - `docs/screenshots/dashboard.png`
-   - `docs/screenshots/upload.png`
-   - `docs/screenshots/processing.png`
-   - `docs/screenshots/results.png`
-   - `docs/screenshots/mpr_viewer.png`
-   - `docs/screenshots/history.png`
-   - `docs/screenshots/case_detail.png`
-3. Optionally record `docs/demo.gif` showing the full upload → results flow
-4. Uncomment the `![...]()` image lines in this README
 
 ---
 
