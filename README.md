@@ -6,23 +6,17 @@
 
 ### Automated Dental Implant SAC Classification System
 
-**Upload a CBCT scan → Get an ITI SAC classification in minutes**
+**Upload a CBCT scan → Get an SAC classification in minutes**
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 ---
 
-<!-- SCREENSHOT PLACEHOLDER -->
-<!-- Replace the line below with an actual screenshot of the dashboard -->
-<!-- ![ImplantSAC Dashboard](docs/screenshots/dashboard.png) -->
-
-> **Screenshot needed:** Add a screenshot here
-> `docs/screenshots/dashboard.png`
+![ImplantSAC Dashboard](docs/screenshots/dashboard.png) 
 
 ---
 
@@ -131,8 +125,10 @@ Five factors are computed automatically from the segmentation and HU values:
 
 ---
 
-### GIF Demo (optional)
-<!-- ![Demo GIF](docs/demo.gif) -->
+### GIF Demo
+
+![Demo GIF](docs/screenshots/ImplantSAC_gif1.gif)
+![Demo GIF](docs/screenshots/ImplantSAC_gif2.gif)
 
 ---
 
@@ -332,20 +328,9 @@ Final SAC:
 
 ---
 
-## Team
-
-| Member | Role |
-|--------|------|
-| **Hisham Edwani** | Backend, API, database, integration |
-| **Safa** | nnU-Net segmentation, measurements, testing |
-| **Alaa** | YOLO detection, evaluation |
-
----
-
 ## Disclaimer
 
 > ImplantSAC is a **clinical decision support tool**. All classifications are AI-generated suggestions. Final treatment decisions remain the sole responsibility of the treating clinician. This system does not replace professional clinical judgment.
-
 
 ---
 
