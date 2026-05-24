@@ -15,9 +15,8 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
 
 ---
-
-![ImplantSAC Dashboard](docs/screenshots/dashboard.png) 
-
+![Demo GIF](docs/screenshots/ImplantSAC_gif1.gif)
+![Demo GIF](docs/screenshots/ImplantSAC_gif2.gif) 
 ---
 
 </div>
@@ -123,12 +122,6 @@ Five factors are computed automatically from the segmentation and HU values:
 ![Case Detail](docs/screenshots/case_detail2.png)
 > Full case view with classification override (S/A/C), clinician notes, detection details, reasoning chain, and clinical disclaimer card.
 
----
-
-### GIF Demo
-
-![Demo GIF](docs/screenshots/ImplantSAC_gif1.gif)
-![Demo GIF](docs/screenshots/ImplantSAC_gif2.gif)
 
 ---
 
