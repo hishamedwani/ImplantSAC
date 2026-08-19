@@ -193,7 +193,7 @@ ImplantSAC-/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/hishamedwani/ImplantSAC-.git
+git clone https://github.com/hishamedwani/ImplantSAC.git
 cd ImplantSAC-
 ```
 
